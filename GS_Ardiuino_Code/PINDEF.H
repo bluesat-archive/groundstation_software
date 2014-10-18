@@ -12,7 +12,8 @@
 enum op_mode 
 {
   DEBUG_MODE,
-  NORMAL_MODE
+  MANUAL_MODE,
+  AUTO_MODE
 };
 
 #define DOWN_PIN 8
