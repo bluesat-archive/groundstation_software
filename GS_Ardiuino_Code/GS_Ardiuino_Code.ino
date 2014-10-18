@@ -136,7 +136,7 @@ double degCount(double countIn){
 //Sets elevation actuator to set degrees [-180,180]
 void setElevation(double set){
   double current = getElevation();
-  if (current > set + 0.5 {
+  if (current > set + 0.5) {
     while (current > set + 0.5) {
       digitalWrite(DOWN_PIN, ON);
       current = getElevation();
