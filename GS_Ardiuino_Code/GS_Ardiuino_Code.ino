@@ -3,16 +3,19 @@
   Arduino Code
   Main Function and setup code
   Created: T Nguyen, 5-Oct-2014
-  Last Modified: M Yeo, 13-Oct-2014  
+  Last Modified: M Yeo, 18-Oct-2014  
 */
 
-#include "PINDEF.h"
+#include "PINDEF.H"
 
 #define STRING_BUFFER 100
 //#define OP_MODE DEBUG_MODE
 #define OP_MODE AUTO_MODE
-#define FULL_VOLTS 5.043 // Voltage at Angle +180deg
-#define DZ_ANGLE 18.783  // Angle between 'A' and 'B' (degrees)
+#define AZI_FULL_VOLTS 5.043 // Voltage at Angle +180deg
+#define AZI_DZ_ANGLE 18.783  // Angle between 'A' and 'B' (degrees)
+#define ELE_MIN_VOLTS 0.802 // Voltage at Angle +180deg
+#define ELE_MAX_VOLTS 4.997 // Voltage at Angle +180deg //NOTE: THIS CHANGES WHEN ARDUINO IS POWERED BY COMPUTER
+#define ELE_MAX_ANGLE 173//162.28  // Angle between 'A' and 'B' (degrees) //set emperically so that 90deg = actual 90deg
 #define MAX_COUNTS 1023
 #define MAX_VOLTS 5.0
 #define PRECISION 0.4// Smallest angle increment when reading in
@@ -23,7 +26,7 @@
 
 void debugMenu(void);
 void ctrlOff(void);
-double degCount(double countIn);
+double aziDegCount(double countIn);
 void setElevation(double set);
 void setAzimuth(double set);
 double getAzimuth(void);
@@ -92,9 +95,9 @@ void debugMenu(){
   Serial.println(feedbackString); 
   */
   Serial.print("Elevation: ");
-  Serial.print(degCount(elevation));
+  Serial.print(aziDegCount(elevation));
   Serial.print(" Azimuth: ");
-  Serial.println(degCount(azimuth));
+  Serial.println(eleDegCount(azimuth));
   
   if (Serial.available()) {           // got anything from USB-Serial?
     c =(char)Serial.read();     // read from USB-serial
@@ -122,35 +125,50 @@ void debugMenu(){
   }
 }
 
+
 /** Converts analogRead() to degrees*/
-double degCount(double countIn){
+double eleDegCount(double countIn){
   double voltage = countIn*MAX_VOLTS/MAX_COUNTS;
-  double m = (360 - DZ_ANGLE)/FULL_VOLTS;
-  double b = -180 + DZ_ANGLE;
+  double m = (ELE_MAX_ANGLE-0)/(ELE_MAX_VOLTS-ELE_MIN_VOLTS);
+  double b = -ELE_MIN_VOLTS*m;
   return m * voltage + b;
 }
 
 
-/** Sets elevation actuator to given degrees [-180+DZ_ANGLE,180] [check?]*/
+/** Converts analogRead() to degrees*/
+double aziDegCount(double countIn){
+  double voltage = countIn*MAX_VOLTS/MAX_COUNTS;
+  double m = (360 - AZI_DZ_ANGLE)/AZI_FULL_VOLTS;
+  double b = -180 + AZI_DZ_ANGLE;
+  return m * voltage + b;
+}
+
+
+/** Sets elevation actuator to given degrees [-180+AZI_DZ_ANGLE,180] [check?]*/
 void setElevation(double set){
   double current = getElevation();
   if (current > set + PRECISION/2) {
     while (current > set + PRECISION/2) {
       digitalWrite(DOWN_PIN, ON);
+      Serial.print("down ");
+      Serial.print(current);
+      Serial.println(set);
+      current = getAzimuth();
       current = getElevation();
     }
   } else if (current < set - PRECISION/2) {
     while (current < set - PRECISION/2) { 
       digitalWrite(UP_PIN, ON);
+      Serial.print("up ");
+      Serial.print(current);
+      Serial.println(set);
       current = getElevation();
     }
   }
   ctrlOff();
 }
 
-/** Sets azimuth actuator to given degrees [-180+DZ_ANGLE,180]*/
-
-/** This block is by Mark
+/** Sets azimuth actuator to given degrees [-180+AZI_DZ_ANGLE,180]*/
 void setAzimuth(double set){
   double current = getAzimuth();
   while (current > set + PRECISION/2) {
@@ -169,64 +187,14 @@ void setAzimuth(double set){
   }
   ctrlOff();
 }
-*/
-
-void setAzimuth(double target){
-  double current = getAzimuth();
-  int running = 0; // Check for whether a digitalWrite pin is active
-  int LR = 0; // Check which way it's turning. -1 is left, 1 is right
-  while ((current - target) < PRECISION) {
-    current = getAzimuth();
-    
-    if (!running){
-      if (current > target){
-        digitalWrite(LEFT_PIN, ON);
-        LR = -1;
-      } else {
-        digitalWrite(RIGHT_PIN, ON);
-        LR = 1;
-      }
-      running = 1;
-    }
-    
-    if
-    Serial.print(
-    
-    
-    
-  
-        while ((current - target) < PRECISION){
-        current = getAzimuth();
-        
-    Serial.print("left ");
-    Serial.print(current);
-    Serial.println(set);
-    current = getAzimuth();
-  }
-  while (current < set - PRECISION/2) { 
-    digitalWrite(RIGHT_PIN, ON);
-    Serial.print("right ");
-    Serial.print(current);
-    Serial.println(set);
-    current = getAzimuth();
-  }
-
-
-
-
-
-
-
-
-
 
 
 double getAzimuth(void){
-  return degCount(analogRead(AZIMUTH_PIN)); 
+  return aziDegCount(analogRead(AZIMUTH_PIN)); 
 }
 
 double getElevation(void){
-  return degCount(analogRead(ELEVATION_PIN));
+  return eleDegCount(analogRead(ELEVATION_PIN));
 }
 
 
@@ -236,9 +204,9 @@ void normalMenu(){
   double set[2] = {0,0};
   commandIn(set);
   
-  //setElevation(set[0]);
+  setElevation(set[0]);
   setAzimuth(set[1]);
-  Serial.println("Actuator set");
+  Serial.println("1");//"Actuator set");
 }
 
 void commandIn(double set[2]){
