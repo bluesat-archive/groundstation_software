@@ -149,6 +149,8 @@ void setElevation(double set){
 }
 
 /** Sets azimuth actuator to given degrees [-180+DZ_ANGLE,180]*/
+
+/** This block is by Mark
 void setAzimuth(double set){
   double current = getAzimuth();
   while (current > set + PRECISION/2) {
@@ -167,6 +169,56 @@ void setAzimuth(double set){
   }
   ctrlOff();
 }
+*/
+
+void setAzimuth(double target){
+  double current = getAzimuth();
+  int running = 0; // Check for whether a digitalWrite pin is active
+  int LR = 0; // Check which way it's turning. -1 is left, 1 is right
+  while ((current - target) < PRECISION) {
+    current = getAzimuth();
+    
+    if (!running){
+      if (current > target){
+        digitalWrite(LEFT_PIN, ON);
+        LR = -1;
+      } else {
+        digitalWrite(RIGHT_PIN, ON);
+        LR = 1;
+      }
+      running = 1;
+    }
+    
+    if
+    Serial.print(
+    
+    
+    
+  
+        while ((current - target) < PRECISION){
+        current = getAzimuth();
+        
+    Serial.print("left ");
+    Serial.print(current);
+    Serial.println(set);
+    current = getAzimuth();
+  }
+  while (current < set - PRECISION/2) { 
+    digitalWrite(RIGHT_PIN, ON);
+    Serial.print("right ");
+    Serial.print(current);
+    Serial.println(set);
+    current = getAzimuth();
+  }
+
+
+
+
+
+
+
+
+
 
 
 double getAzimuth(void){
