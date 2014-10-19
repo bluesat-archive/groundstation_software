@@ -3,38 +3,31 @@ david here,
 like the arduino ide, uses rxtx library (those gnu imports) to communicate
 takes in a currently comma seperated file (can be changed)
 
-if youre using this code and a better version hasnt been made just edit constants for whatever file
+if youre stilllll using this code and a better version hasnt been made just edit constants for whatever file
  */
 
 import java.io.*;
-
+import gnu.io.*;
 import java.lang.String;
 import java.lang.Float;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
-
 import java.text.SimpleDateFormat;
 
-import gnu.io.CommPortIdentifier; 
-import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent; 
-import gnu.io.SerialPortEventListener; 
-
 //using RXTX 2.1.7 since actual website down a 2.1.7 mirror was available.
-public class SimpleClient implements SerialPortEventListener {
+public class SimpleClient {
 
     /*======================================================
     Constants
-    
+
     for our lil mission in degrees
     arduino hates any degrees with floats so convert into x1000 ints to salvage 3 decimals of precision
     doing this for both azimuth and elevation
-    
+
     the azimuth data starts off by default at 0/360. it swings forward to 133 and BACK to 227
     the arduino expects azimuth values of +133 and -133 instead.
-    
+
     the elevation data usually would be from 0 to 90 degrees
     instead the signal to send ranges between 10 to 100 degrees
     ======================================================*/
@@ -63,101 +56,43 @@ public class SimpleClient implements SerialPortEventListener {
     Sending Data
     Receiving Data
     ======================================================*/
-
-    // bunch of ardu code, main is at bottom
-    SerialPort serialPort;
-    /** The port we're normally going to use. */
-    private static final String PORT_NAMES[] = { 
-        "/dev/tty.usbserial-A9007UX1", // Mac OS X
-        "/dev/ttyACM0", // Raspberry Pi
-        "/dev/ttyUSB0", // Linux
+    /*
+    // figure out your port name based on os
+    private static final String PORT_NAMES[] = {
+        "/dev/tty.usbmodem", // Mac OS X
+        "/dev/usbdev", // Linux
+        "/dev/tty", // Linux
+        "/dev/serial", // Linux
         "COM3", // Windows
     };
 
-    /**
-     * A BufferedReader which will be fed by a InputStreamReader 
-     * converting the bytes into characters 
-     * making the displayed results codepage independent
-     */
-    private BufferedReader input;
-    /** The output stream to the port */
-    private OutputStream output;
-    /** Milliseconds to block while waiting for port open */
-    private static final int TIME_OUT = 2000;
-    /** Default bits per second for COM port. */
-    private static final int DATA_RATE = 9600;
-
-    public void initialize() {
-        // the next line is for Raspberry Pi and 
-        // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
-        System.setProperty("gnu.io.rxtx.SerialPorts", "/dev/ttyACM0");
-
-        CommPortIdentifier portId = null;
-        Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
-
-        //First, Find an instance of serial port as set in PORT_NAMES.
-        while (portEnum.hasMoreElements()) {
-            CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-            for (String portName : PORT_NAMES) {
-                if (currPortId.getName().equals(portName)) {
-                    portId = currPortId;
-                    break;
-                }
+    // Enumerate system ports and try connecting to Arduino over each
+    while (portId == null && portEnum.hasMoreElements()) {
+        CommPortIdentifier currPortId =
+                (CommPortIdentifier) portEnum.nextElement();
+        for (String portName : PORT_NAMES) {
+            if ( currPortId.getName().equals(portName)
+                    || currPortId.getName().startsWith(portName))
+            {
+                // Try to connect to the Arduino on this port
+                serialPort = (SerialPort)currPortId.open(appName, TIME_OUT);
+                portId = currPortId;
+                break;
             }
         }
-        if (portId == null) {
-            System.out.println("Could not find COM port.");
-            return;
-        }
-
-        try {
-            // open serial port, and use class name for the appName.
-            serialPort = (SerialPort) portId.open(this.getClass().getName(),
-                    TIME_OUT);
-
-            // set port parameters
-            serialPort.setSerialPortParams(DATA_RATE,
-                    SerialPort.DATABITS_8,
-                    SerialPort.STOPBITS_1,
-                    SerialPort.PARITY_NONE);
-
-            // open the streams
-            input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
-            output = serialPort.getOutputStream();
-
-            // add event listeners
-            serialPort.addEventListener(this);
-            serialPort.notifyOnDataAvailable(true);
-        } catch (Exception e) {
-            System.err.println(e.toString());
-        }
     }
 
-    /**
-     * This should be called when you stop using the port.
-     * This will prevent port locking on platforms like Linux.
+    // set port parameters
+    serialPort.setSerialPortParams(
+            DATA_RATE, // 9600 baud
+            SerialPort.DATABITS_8,
+            SerialPort.STOPBITS_1,
+            SerialPort.PARITY_NONE);
+
+    // add event listeners
+    serialPort.addEventListener(this);
+    serialPort.notifyOnDataAvailable(true);
      */
-    public synchronized void close() {
-        if (serialPort != null) {
-            serialPort.removeEventListener();
-            serialPort.close();
-        }
-    }
-
-    /**
-     * Handle an event on the serial port. Read the data and print it.
-     */
-    public synchronized void serialEvent(SerialPortEvent oEvent) {
-        if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-            try {
-                String inputLine=input.readLine();
-                System.out.println(inputLine);
-            } catch (Exception e) {
-                System.err.println(e.toString());
-            }
-        }
-        // Ignore all the other eventTypes, but you should consider the other ones.
-    }
 
 
     /**
@@ -224,27 +159,44 @@ public class SimpleClient implements SerialPortEventListener {
             Goin to transmit to arduino here.
              */
 
-            SerialTest main = new SerialTest();
-            main.initialize();
-         /*   Thread t=new Thread() {
-                public void run() {
-                    //the following line will keep this app alive for 1000 seconds,
-                    //waiting for events to occur and responding to them (printing incoming messages to console).
-                    try {Thread.sleep(1000000);} catch (InterruptedException ie) {}
-                }
-            };*/
-            //t.start();
-
-            System.out.println("Started");
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss");
+            System.out.println("Current Time:  "+sdf.format(cal.getTime())+"!");
+            System.out.println("Waiting Until: "+date.get(0)+"!");
+            int index = 0;
             while(true){
+
+                // uncomment this if you want to wait a second each thing
+                try {
+                    // sleeps one second but is NOT SECOND-SYNCED WITH COMPUTER CLOCK 
+                    Thread.sleep(1000);                 
+                } catch(InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+
+                // always constantly get the time
                 System.out.println();
                 cal = Calendar.getInstance();
-                System.out.println("Time: "+sdf.format(cal.getTime()));
+                System.out.println("Last Message:   "+"["+azimuth.get(index)+","+elevation.get(index)+"]");
+                System.out.println("Current Moment: "+sdf.format(cal.getTime())+"!");
+                System.out.println("Next Update In: "+date.get(index)+"!");
+                System.out.println();
 
+                // compare time to the next target.
+                // if the time has elapsed, input where we need to be next!
+                if(false){
+
+                   // while(){
+
+                  //  }
+                    index++;
+                }
 
             }
+
+
+
+
         } 
         // nothing to see here folks
         catch (IOException e){
