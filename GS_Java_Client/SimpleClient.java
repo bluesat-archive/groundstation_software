@@ -158,7 +158,11 @@ public class SimpleClient {
             Main loop begins here
             Goin to transmit to arduino here.
              */
-
+            ArduinoTest1 arduLink = new ArduinoTest1();
+            if (!arduLink.initialize()){
+                System.out.println("cant find arduino!");
+                return;
+            }
             Calendar cal = Calendar.getInstance();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss");
             System.out.println("Current Time:  "+sdf.format(cal.getTime())+"!");
@@ -186,9 +190,7 @@ public class SimpleClient {
                 // if the time has elapsed, input where we need to be next!
                 if(false){
 
-                   // while(){
-
-                  //  }
+                    arduLink.sendData("["+azimuth.get(index)+","+elevation.get(index)+"]");
                     index++;
                 }
 
