@@ -33,12 +33,14 @@ public class SimpleClient {
     ======================================================*/
     // adjusting constant since arduino works best with integers
     private static final int azimuthMultiplier = 1000;
+    private static final int azimuthOffset = 0;
     private static final int elevationMultiplier = 1000;
+    private static final int elevationOffset = 10;
 
     // Define the filepath here as "/relative_to_simpleclient"
     // if you want, define the order the columns of data are (if theyre different to below)
     // also the icon each column in the file is seperated with
-    private static final String relativePath = "/luxspace.csv";
+    //private static final String relativePath = "/luxspace.csv";
     private static final String seperationIcon = ",";
     private static final int dateSlot = 0;
     private static final int azimuthSlot = 1;
@@ -105,11 +107,11 @@ public class SimpleClient {
         try{  
             System.out.println("starting up!!...");
             // java uses absolute file paths, get relative from this 
-            String filePath = new File("").getAbsolutePath();
-            filePath += relativePath;
-            File file = new File(filePath);
+            //String filePath = new File("").getAbsolutePath();
+            //filePath += relativePath;
+            //File file = new File(filePath);
             // read file
-            FileReader fr = new FileReader(filePath);
+            FileReader fr = new FileReader("luxspace.csv");
             BufferedReader reader = new BufferedReader(fr);
             // to: contains comma seperated line
             ArrayList<String> date = new ArrayList<String>();
@@ -159,8 +161,11 @@ public class SimpleClient {
             Goin to transmit to arduino here.
              */
             ArduinoTest1 arduLink = new ArduinoTest1();
+            /*
+java -Djava.library.path=/Users/iuyhcdfs/ArduinoTest1 -cp ./RXTXcomm.jar:./build/classes arduinotest1.ArduinoTest1 
+            */
             if (!arduLink.initialize()){
-                System.out.println("cant find arduino!");
+                System.out.println("ground station disconnected: cant find arduino!");
                 return;
             }
             Calendar cal = Calendar.getInstance();
@@ -168,7 +173,14 @@ public class SimpleClient {
             System.out.println("Current Time:  "+sdf.format(cal.getTime())+"!");
             System.out.println("Waiting Until: "+date.get(0)+"!");
             int index = 0;
+            // send initial data
+
+            
+            arduLink.sendData("["+azimuth.get(index)+","+elevation.get(index)+"]\n");
             while(true){
+
+                // tell arduino where we want to be ALL THE TIME
+                //arduLink.sendData("["+azimuth.get(index)+","+elevation.get(index)+"]\n");
 
                 // uncomment this if you want to wait a second each thing
                 try {
@@ -187,17 +199,15 @@ public class SimpleClient {
                 System.out.println();
 
                 // compare time to the next target.
-                // if the time has elapsed, input where we need to be next!
-                if(false){
-
-                    arduLink.sendData("["+azimuth.get(index)+","+elevation.get(index)+"]");
+                // if the time has elapsed, shift index to next date+location!
+                if( sdf.format(cal.getTime()) .equals (date.get(index)) ){
+                    // NOW THAT WE SENT THE OLD ONE AT THE OLD DATE
+                	// BEGIN MOVING TO THE NEXT ONE REGARDLESS OF DUE DATE ASAP
                     index++;
+                    arduLink.sendData("["+azimuth.get(index)+","+elevation.get(index)+"]\n");                    
                 }
 
             }
-
-
-
 
         } 
         // nothing to see here folks

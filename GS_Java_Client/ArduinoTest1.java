@@ -17,10 +17,10 @@ public class ArduinoTest1 implements SerialPortEventListener {
 
     private static final String PORT_NAMES[] = { 
         "/dev/tty.usbmodem", // Mac OS X
-        "/dev/usbdev", // Linux
-        "/dev/tty", // Linux
-        "/dev/serial", // Linux
-        "COM3", // Windows
+     //   "/dev/usbdev", // Linux
+     //   "/dev/tty", // Linux
+     //   "/dev/serial", // Linux
+     //   "COM3", // Windows
     };
     
     private String appName;
@@ -84,9 +84,9 @@ public class ArduinoTest1 implements SerialPortEventListener {
         return false;
     }
     
-    private void sendData(String data) {
+    public void sendData(String data) {
         try {
-            System.out.println("Sending data: '" + data +"'");
+            System.out.println("Sending data: *" + data +"*");
             
             // open the streams and send the "y" character
             output = serialPort.getOutputStream();
@@ -154,5 +154,13 @@ public class ArduinoTest1 implements SerialPortEventListener {
 
 }
 
-
+/*Stable Library
+=========================================
+Native lib Version = RXTX-2.2pre2
+Java lib Version   = RXTX-2.1-7
+WARNING:  RXTX Version mismatch
+	Jar version = RXTX-2.1-7
+	native lib Version = RXTX-2.2pre2
+Trying:
+   port/dev/tty.Bluetooth-Incoming-Port*/
 
