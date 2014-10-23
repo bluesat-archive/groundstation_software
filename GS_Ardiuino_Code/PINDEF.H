@@ -1,9 +1,9 @@
 /*
   BLUEsat Groundstation
-  Arduino Code
+  Arduino Serial to Actuators
   Definition of direciton input/output pins on the DB9 output cable made by Mark/Alexis
   Created: T Nguyen, 5-Oct-2014
-  Last Modified: T Nguyen, 5-Oct-2014  
+  Last Modified: M Yeo, 23-Oct-2014  
 */
 
 #ifndef PINDEF_H
@@ -11,9 +11,9 @@
 
 enum op_mode 
 {
-  DEBUG_MODE,
-  MANUAL_MODE,
-  AUTO_MODE
+  DEBUG_MODE,  // Serial WASD control + current angle feedback
+  MANUAL_MODE, // Set actuator angles through EL & AZ constants
+  AUTO_MODE    // Reads desired angles in from Serial; Format: "[Ele,Azi]"; where Ele & Azi are desired degrees * 1000
 };
 
 #define DOWN_PIN 8
