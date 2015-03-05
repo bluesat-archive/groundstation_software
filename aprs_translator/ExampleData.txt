@@ -1,0 +1,16 @@
+13:14:25$ fm VK2MRW-0 to S3U5P7-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)wl"&>/'"4L}|!)%V'^|!w/\!|3
+13:16:25$ fm VK2MRW-0 to S3U5P6-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl*.>/'"4L}MT-AIO |!*%U'^|!w!{!|3
+13:18:24$ fm VK2MRW-0 to S3U5P6-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl 4>/'"4B}|!+%U'`|!wy`!|3
+13:20:25$ fm VK2MRW-0 to S3U5P5-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)wl 4>/'"4R}|!,%U'a|!wz8!|3
+13:22:25$ fm VK2MRW-0 to S3U5P7-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl!@>/'"4D}|!-%U'b|!w0a!|3
+13:26:25$ fm VK2MRW-0 to S3U5P6-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl 4>/'"4K}|!/%T'd|!wQm!|3
+13:34:26$ fm VK2MRW-0 to S3U5P6-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl 6>/'"4I}|!3%S'f|!w\x!|3
+13:22:25$ fm VK2MRW-0 to S3U5P7-0 via WIDE1-1,WIDE2-1 UI  PID=F0
+          `O)vl!@>/'"4D}|!-%U'b|!w0a!|3
