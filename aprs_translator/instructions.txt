@@ -1,0 +1,104 @@
+
+=== WINDOWS ===
+
+1. Download these:
+- zadig (sdr driver installer) http://zadig.akeo.ie/
+- sdr# (sdr visualisation + audio software) http://sdrsharp.com/#download
+- virtual cable (pipes audio out into audio in) http://vb-audio.pagesperso-orange.fr/Cable/index.htm
+- Qtmm AFSK1200 Decoder (extracts APRS packets from audio) http://sourceforge.net/projects/qtmm/
+- cmder w/ gcc (unix terminal for windows) http://cgi.cse.unsw.edu.au/~daniels/portable_tools/
+- aprsTranslator.c (translates APRS packet into humanspeak) bluesat github
+
+
+2. Test SDR:
+- Plug NooElec+Antenna into laptop
+- Open up SDRSharp.exe
+- Source -> 'RTL-SDR / USB' (if "1 compatible devices have been found but are all busy", reinstall drivers (step 2a))
+- Radio -> select 'NFM' (narrow FM)
+- Radio -> uncheck 'Snap to grid'
+- Numbers up the top -> type in frequency of handheld radio (units in Hz)
+- Press play button
+- On top graph, reposition (click) the red line to where the spike appears (signal appears on waterfall (bottom graph) as well)
+- Check w/ earphones to see if signal is audible (volume is at the top of window)
+
+2a. Reinstall SDR drivers:
+- Open zadig
+- Options -> List All Devices
+- Drop-down menu -> RTL2838UHIDIR
+- Up/down arrows -> libusbK (if device is still busy, try the others)
+- Install drivers
+
+3. Pipe audio to AFSK Decoder
+- Install virtual cable
+- Windows control panel->Sound
+- Playback tab -> CABLE Input -> Set Default
+- Open AFSK Decoder
+- Input -> CABLE Output
+- Press play button
+
+4. Receive APRS Packets
+- In SDR#
+- Radio -> select 'WFM' (wide FM)
+- Frequency: 145.175.000Hz (APRS freq)
+- Press play button
+- Check on AFSK window that audio is being received (green bar should be moving)
+- Power on MT-AIO (ensure antenna is plugged in first)
+- Place MT-AIO in an area with suitable reception (i.e. outside) - blinking green LED == no reception
+- Every 30s a signal should appear in SDR# - position the red line at the centre of the peak
+- Text should appear in the AFSK window - this is the APRS packet
+e.g.
+17:58:42$ fm VK2MRW-0 to S3U5P8-0 via WIDE2-1 UI  PID=F0
+          `O)vl .O/'"4@}|!$%A'l|!wwd!|3
+
+
+5. Compile & Run APRS Translator
+- Open cmder
+- Navigate to directory containing aprsTranslator.c
+- $ gcc -Werror -Wall -O -o aprsTranslator aprsTranslator.c
+- $ mv aprsTranslator aprsTranslator.exe
+- $ aprsTranslator.exe
+- Copy in APRS packet 1 line at a time (windows only accepts 1 line at a time for some reason; when copying 2nd line, include the spaces at the beginning)
+- Information will be printed to screen (in windows, degrees symbol messes up (° turns into ┬░))
+e.g.
+================================
+Enter APRS String:
+17:59:12$ fm VK2MRW-0 to S3U5P8-0 via WIDE2-1 UI  PID=F0
+          `O)vl .O/'"4@}|!%%@'m|!wwd!|3
+--------------------------------
+Time:             17:59:12
+Coordinates:      33┬░55'4"S 151┬░13'54"E
+Coordinates(deg): 33.918000S 151.231667E
+Altitude:         41m
+Horizontal Speed: 0km/h
+Course:           18┬░
+================================
+- Coordinates(deg) can be copied into Google Maps
+
+
+
+
+
+
+
+=== OSX ===
+
+1. Download these:
+- gqrx (SDR visualisation + audio software) http://eliasoenal.com/2012/09/30/osx-port-of-the-awesome-gqrx-sdr-software/
+- aprsTranslator.c (translates APRS packet into humanspeak) bluesat github
+
+2. Receive APRS Packets
+- Plug in NooElec+Antenna into laptop
+- Open up gqrx, use recommended settings if dialog box comes up
+- Set frequency at 145.175MHz, press the 'on' button (top left)
+- Power on MT-AIO (ensure antenna is plugged in first)
+- Place MT-AIO in an area with suitable reception (i.e. outside) - blinking green LED == no reception
+- Every 30s a signal should appear in gqrx - position the red line at the centre of the peak (scroll to zoom)
+- Data -> AFSK 1200 Decoder - APRS packets should appear in this window
+
+3. Translate APRS Packets
+- In Terminal, navigate to directory containing aprsTranslator.c
+- $ gcc -Werror -Wall -O -o aprsTranslator aprsTranslator.c
+- $ ./aprsTranslator
+- Copy in APRS packet - information will be printed to screen
+- Coordinates can be copied into Google Maps
+

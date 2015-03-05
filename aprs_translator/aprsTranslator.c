@@ -1,5 +1,5 @@
 //Mark Yeo; mark.yeo@student.unsw.edu.au
-//Created 25Jan15, Modified 26Jan15
+//Created 25Jan15, Modified 5Mar15
 //APRS Packet Translator
 //Translator derived from the "APRS PROTOCOL REFERENCE"(v1.0.1)(Ch10: MIC-E DATA FORMAT)
 
@@ -230,7 +230,7 @@ int main() {
         //Coordinates (degrees only)
         double dLat = ilat[0] + (ilat[1] + ilat[2]/100.0) / 60.0;
         double dLon = ilon[0] + (ilon[1] + ilon[2]/100.0) / 60.0;
-        printf("Coordinates(deg): %lf°%c %lf°%c\n", dLat, ns, dLon, ew);
+        printf("Coordinates(deg): %lf.%c %lf.%c\n", dLat, ns, dLon, ew);
         
         //Altitude
         printf("Altitude:         %dm\n", alt);
