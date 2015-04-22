@@ -1,5 +1,5 @@
 //Mark Yeo; mark.yeo@student.unsw.edu.au
-//Last Modified: 20Apr15
+//Last Modified: 22Apr15
 //Groundstation Code - Controller for Antenna Actuators
 // Takes in commands via serial, orients antenna to given angles
 // Commands in format: [<Azimuth angle * 1000>, <Elevation angle * 1000>]
@@ -11,16 +11,16 @@ enum mode_select {
 };
 
 #include "actuator.h"
-#define MODE_SELECT SERIAL_MODE
-#define MANUAL_AZ -90 //-180deg - 180deg
-#define MANUAL_EL 20  //0deg - 180deg
+#define MODE_SELECT WASD_MODE//SERIAL_MODE //MANUAL_MODE//
+#define MANUAL_AZ 70 //-180deg - 180deg
+#define MANUAL_EL 50  //0deg - 180deg
 
 
 
 void setup(){
   Serial.begin(9600);
-  initEle();
   initAzi();
+  initEle();
 }
 
 
@@ -32,6 +32,7 @@ void loop(){
     case MANUAL_MODE:    //For setting angles via MANUAL_AZ/EL constants
       setAzi(MANUAL_AZ);
       setEle(MANUAL_EL);
+      delay(1000000);
       break;
     case SERIAL_MODE:    //For setting angles via serial (in format: [<Azimuth angle * 1000>, <Elevation angle * 1000>])
       serialMenu();
@@ -45,9 +46,9 @@ void loop(){
 //For controlling via WASD (any other key to stop)
 void wasdMenu(){
   //Print out current actuator statuses
-  Serial.print(" Azimuth: ");
+  Serial.print("Azimuth: ");
   Serial.print(getAzi());
-  Serial.print("Elevation: ");
+  Serial.print(" Elevation: ");
   Serial.println(getEle());
   
   //Read in + execute command
@@ -61,18 +62,18 @@ void wasdMenu(){
         break;
       case 'a':
         haltAziEle();
+        Serial.println("Going LEFT");
         decrAzi();
-        digitalWrite(LEFT_PIN,HIGH);
         break;
       case 's':
         haltAziEle();
+        Serial.println("Going DOWN");
         decrEle();
-        digitalWrite(DOWN_PIN,HIGH);
         break;
       case 'd':
         haltAziEle();
+        Serial.println("Going RIGHT");
         incrAzi();
-        digitalWrite(RIGHT_PIN,HIGH);
         break;
       default:
         haltAziEle();

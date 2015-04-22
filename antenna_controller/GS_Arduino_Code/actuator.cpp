@@ -1,5 +1,5 @@
 //Mark Yeo; mark.yeo@student.unsw.edu.au
-//Last Modified: 20Apr15
+//Last Modified: 22Apr15
 //Groundstation Code - Controller for Antenna Actuators
 // Interfacing functions for actuators
 
@@ -46,11 +46,11 @@ void haltAzi(){
   digitalWrite(RIGHT_PIN, LOW);
 }
 void setAzi(double desiredAzi){
-  while (desiredAzi < getAzi()){
+  while (getAzi() < desiredAzi){
     incrAzi();
   }
   haltAzi();
-  while (desiredAzi > getAzi()){
+  while (getAzi() > desiredAzi){
     decrAzi();
   }
   haltAzi();
@@ -66,12 +66,14 @@ void haltEle(){
   digitalWrite(DOWN_PIN, LOW);
 }
 void setEle(double desiredEle){
-  while (desiredEle < getEle()){
+  while (getEle() < desiredEle){
     incrEle();
+    //Serial.println(getEle());
   }
   haltEle();
-  while (desiredEle > getEle()){
+  while (getEle() > desiredEle){
     decrEle();
+    //Serial.println(getEle());
   }
   haltEle();
 }
