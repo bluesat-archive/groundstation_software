@@ -11,7 +11,7 @@ enum mode_select {
 };
 
 #include "actuator.h"
-#define MODE_SELECT WASD_MODE//SERIAL_MODE //MANUAL_MODE//
+#define MODE_SELECT SERIAL_MODE //MANUAL_MODE//WASD_MODE//
 #define MANUAL_AZ 70 //-180deg - 180deg
 #define MANUAL_EL 50  //0deg - 180deg
 
