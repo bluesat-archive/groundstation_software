@@ -3,7 +3,7 @@
   Arduino Serial to Actuators
   Main Function and Setup code
   Created: T Nguyen, 5-Oct-2014
-  Last Modified: B Luc, 25-April-2015  
+  Last Modified: B Luc, 23-Mar-2015  
 */
 /**
 AUTO_MODE:
@@ -16,11 +16,10 @@ AUTO_MODE:
 
 #define STRING_BUFFER 100
 #define OP_MODE MANUAL_MODE
-//#define OP_MODE DEBUG_MODE
 
 /** For MANUAL_MODE - desired Elevation & Azimuth angles*/
 #define EL 0.0
-#define AZ 0.0
+#define AZ 90.0
 
 
 /** For Calibration*/
@@ -65,8 +64,8 @@ void loop(){
       debugMenu();
       break;
     case MANUAL_MODE:
-      setElevation(EL); 
-      setAzimuth(AZ);  
+      //setElevation(EL);
+      setAzimuth(AZ);
       break;
     case AUTO_MODE:
       normalMenu();
@@ -93,27 +92,27 @@ void debugMenu(){
   int elevation = analogRead(ELEVATION_PIN);
   int azimuth = analogRead(AZIMUTH_PIN);
   Serial.print("Elevation: ");
-  Serial.print(eleDegCount(elevation));
+  Serial.print(aziDegCount(elevation));
   Serial.print(" Azimuth: ");
-  Serial.println(aziDegCount(azimuth));
+  Serial.println(eleDegCount(azimuth));
   if (Serial.available()) {     // If there's stuff to read in USB-serial,
     c =(char)Serial.read();     // Read in a char
     switch (c) {
       case 'w':
        Serial.println("Going UP");
-         digitalWrite(RIGHT_PIN,ON);
+       digitalWrite(UP_PIN,ON);
       break;
       case 'a':
        Serial.println("Going Left");
-         digitalWrite(DOWN_PIN,ON); //was left
+       digitalWrite(LEFT_PIN,ON);
       break;
       case 's':
-       Serial.println("Going Down");
-         digitalWrite(UP_PIN,ON);
+       Serial.println("Going UP");
+       digitalWrite(DOWN_PIN,ON);
       break;
       case 'd':
-       Serial.println("Going Right");
-         digitalWrite(LEFT_PIN,ON); //was riGht
+       Serial.println("Going UP");
+       digitalWrite(RIGHT_PIN,ON);
       break;
       default:
         ctrlOff();
@@ -143,12 +142,10 @@ double aziDegCount(double countIn){
 
 /** Sets elevation actuator to given degrees [0,ELE_MAX_ANGLE] */
 void setElevation(double set){
-  int elevation = analogRead(ELEVATION_PIN);
-  double current = eleDegCount(elevation);
-  //double current = getElevation();
+  double current = getElevation();
   if (current > set + PRECISION/2) {        // If the current (actuator) angle > desired angle (set),
     while (current > set + PRECISION/2) {   // Turn the actuator downwards until current angle < desired angle
-      digitalWrite(UP_PIN, ON);
+      digitalWrite(DOWN_PIN, ON);
       //Serial.print("down ");
       //Serial.print(current);
       //Serial.println(set);
@@ -156,7 +153,7 @@ void setElevation(double set){
     }
   } else if (current < set - PRECISION/2) {
     while (current < set - PRECISION/2) { 
-      digitalWrite(RIGHT_PIN, ON);
+      digitalWrite(UP_PIN, ON);
       //Serial.print("up ");
       //Serial.print(current);
       //Serial.println(set);
@@ -169,29 +166,27 @@ void setElevation(double set){
 
 /** Sets azimuth actuator to given degrees [-180+AZI_DZ_ANGLE,180]*/
 void setAzimuth(double set){
-  int azimuth = analogRead(AZIMUTH_PIN);
-  double current = aziDegCount(azimuth);
-  //double current = getAzimuth();
+  double current = getAzimuth();
   while (current > set + PRECISION/2) {
-    digitalWrite(DOWN_PIN, ON);
+    digitalWrite(LEFT_PIN, ON);
     Serial.print("left ");
     Serial.print(current);
     Serial.println(set);
     current = getAzimuth();
   }
   while (current < set - PRECISION/2) { 
-    digitalWrite(LEFT_PIN, ON);
+    digitalWrite(RIGHT_PIN, ON);
     Serial.print("right ");
     Serial.print(current);
     Serial.println(set);
     current = getAzimuth();
   }
   while ((current >= (set - PRECISION/2)) || (current <= (set + PRECISION/2))) {
-    digitalWrite(DOWN_PIN, OFF);
+    digitalWrite(RIGHT_PIN, OFF);
     digitalWrite(LEFT_PIN, OFF);
   }
   while (current == (set)) {
-    digitalWrite(DOWN_PIN, OFF);
+    digitalWrite(RIGHT_PIN, OFF);
     digitalWrite(LEFT_PIN, OFF);
   }
   ctrlOff();
@@ -215,7 +210,7 @@ void normalMenu(){
   double set[2] = {0,0};
   commandIn(set);
   //setElevation(set[0]);
-  setAzimuth(set[1]);
+  //setAzimuth(set[1]);
   Serial.println("1");    // Returns "1" when actuators are set
 }
 
@@ -235,3 +230,4 @@ void commandIn(double set[2]){
   Serial.println(set[1], DEC);
   temp = Serial.read();            // Gets rid of final ']'
 }
+
