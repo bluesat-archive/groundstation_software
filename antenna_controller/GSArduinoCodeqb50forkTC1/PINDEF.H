@@ -16,10 +16,10 @@ enum op_mode
   AUTO_MODE    // Reads desired angles in from Serial; Format: "[Ele,Azi]"; where Ele & Azi are desired degrees * 1000
 };
 
-#define LEFT_PIN 8
-#define DOWN_PIN 9
-#define RIGHT_PIN 10
-#define UP_PIN 11
+#define LEFT_PIN 10
+#define DOWN_PIN 8
+#define RIGHT_PIN 11
+#define UP_PIN 9
 //#define ELEVATION_PIN 0
 //#define AZIMUTH_PIN 1
 #define ELEVATION_PIN 1

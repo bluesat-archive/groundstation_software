@@ -28,8 +28,8 @@ currDate = datetime.utcnow()
 for i in range(0,int(noEntries)):
 	currDate = currDate + timedelta(seconds=30)
 	time = currDate.strftime("%d-%m-%Y %H:%M:%S")
-	azimuth = random.uniform(-178.0,178)
-	elevation = random.uniform(0,178)
+	azimuth = int(random.uniform(0,178))
+	elevation = int(random.uniform(0,178))
 	r = random.uniform(0,1024)
 	fo.write(time + "\t" + repr(azimuth) + "\t" + repr(elevation) + "\t" + repr(r) + "\n")
 

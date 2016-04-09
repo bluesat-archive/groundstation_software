@@ -49,7 +49,7 @@ class Coordinates:
 		print("Time:\t" + str(self.UTCTime))
 		print("Azimuth:\t" + str(self.Azimuth))
 		print("Elevation:\t" + str(self.Elevation))
-		print("Range:\t" + str(self.Range))
+		print("Range:\t" + str(self.Range))  
 		print("-------------------------------------------------------------------")
 
 # Functions
@@ -78,21 +78,31 @@ def main():
 		readFile(str(sys.argv[1]))
 		while not q.empty():
 			c = q.get()
-			azi = c.getAzimuth()
-			ele = c.getElevation()
+			if(len(c.getAzimuth())>2):
+				azi = c.getAzimuth()
+			elif((len(c.getAzimuth())>1)):
+				azi = "0"+c.getAzimuth()
+			else:
+				azi = "00"+c.getAzimuth()
+			if(len(c.getElevation())>2):
+				ele = c.getElevation()
+			elif((len(c.getElevation())>1)):
+				azi = "0"+c.getElevation()			
+			else:			
+				ele = "00"+c.getElevation()
 			t = c.getTime()
 			tDate = datetime.strptime(t, "%d-%m-%Y %H:%M:%S")
+			ser = serial.Serial('/dev/ttyACM0',9600)
 			# Continually polls to check if current time is equal to time in coordinate
 			while True:		
 				currDate = datetime.utcnow()
 				currTime = currDate.strftime("%d-%m-%Y %H:%M:%S")
 				# If current time is equal to time in coordinate, send coordinates through serial
 				if t == currTime:
-					ser = serial.Serial('/dev/ttyACM0',9600)
-					coor = 	"["+ele+","+azi+"]"	
-					ser.write("["+ele+","+azi+"]")
+					
+					coor = 	"W"+azi+" "+ezi					
+					ser.write(coor)
 					print("Sending "+coor)
-					ser.close()
 					break
 				# Otherwise sleep for a second before checking again
 				else:
@@ -102,7 +112,7 @@ def main():
 						break
 					print currTime
 					time.sleep(1)
-			
+			ser.close()
 
 # Python thing to check for main functions and execute them
 if __name__ == '__main__':

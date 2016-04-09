@@ -1,5 +1,5 @@
-/*
-  BLUEsat/QB50 Groundstation
+//#define OP_MODE MANUAL_MODE
+/*  BLUEsat/QB50 Groundstation
   Arduino Serial to Actuators
   Main Function and Setup code
   Created: T Nguyen, 5-Oct-2014
@@ -25,13 +25,13 @@ AUTO_MODE:
 
 
 /** For Calibration*/
-#define AZI_FULL_VOLTS 5.043  // Voltage at Angle +180deg  - (360 degress in GS232 code)
-#define AZI_MIN_VOLTS 0.000   // Voltage at Angle -180deg  - Added in QB50 fork (0 degrees in GS232 code)
-#define AZI_MAX_ANGLE 360.0   // Max azimuth angle - added in QB50 fork
-#define AZI_DZ_ANGLE 18.783   // Angle between 'A' and 'B' (degrees)
-#define ELE_MIN_VOLTS 0.802   // Voltage at Angle 0deg
-#define ELE_MAX_VOLTS 4.997   // Voltage at Angle +180deg //NOTE: THIS CHANGES WHEN ARDUINO IS POWERED BY COMPUTER
-#define ELE_MAX_ANGLE 173.0     // Set emperically so that 90deg = actual 90deg
+#define AZI_FULL_VOLTS 3.3  // Voltage at Angle +180deg  - (360 degress in GS232 code) //NOTE: Now referenced to 3.3V regulator on arudino - must use external reference in calls
+#define AZI_MIN_VOLTS 0.00:0   // Voltage at Angle -180deg  - Added in QB50 fork (0 degrees in GS232 code)
+#define AZI_MAX_ANGLE 372.0   // Max azimuth angle - added in QB50 fork
+#define AZI_DZ_ANGLE 0.00   // Angle between 'A' and 'B' (degrees)
+#define ELE_MIN_VOLTS 0.71   // Voltage at Angle 0deg
+#define ELE_MAX_VOLTS 3.3   // Voltage at Angle +180deg //NOTE: Now referenced to 3.3V regulator on arudino - must use external reference in calls
+#define ELE_MAX_ANGLE 179     // Set emperically so that 90deg = actual 90deg
 #define ELE_DZ_ANGLE 0.000    // Angle between 'A' and 'B' (degrees) - Added in QB50 fork
 #define MAX_COUNTS 1023       // Maximum int returned from analogRead()
 #define MAX_VOLTS 5.0         // Maximum voltage read by analogRead()
@@ -54,7 +54,7 @@ float current_el = 0.0;   // Current Elevation (0 = Horizontal, 90 = vertical, 1
 
 void debugMenu(void);
 void ctrlOff(void);
-double aziDegCount(double countIn);
+double aziDegCount(double countIn);  
 void setElevation(double set);
 void setAzimuth(double set);
 double getAzimuth(void);
@@ -73,6 +73,7 @@ void setup(){
   pinMode(UP_PIN, OUTPUT);
   pinMode(QB50_MODE_PIN, INPUT_PULLUP);  // Added for QB50 fork
   ctrlOff();
+  analogReference(EXTERNAL);  //Added in QB50 fork to reference 3.3V from on board regulator
   MODE=checkmode();
   current_az = get_az();
   current_el = get_el();
@@ -84,7 +85,7 @@ void loop(){
   MODE=checkmode();
   switch (MODE) {    //Added in QB50 fork
     case 1:      //Added in QB50 fork
-    QB50_Code();
+    QB50_Code();  
     break;
    case 0:
     switch (OP_MODE){
@@ -140,7 +141,7 @@ void debugMenu(){
       case 's':
        Serial.println("Going Down");
          digitalWrite(DOWN_PIN,ON);  //fixed in qb50 fork by changing pindef.h
-      break;
+      break;  Serial.println("QB50 Mode Enabled");
       case 'd':
        Serial.println("Going Right");
          digitalWrite(RIGHT_PIN,ON);  //fixed in qb50 fork by changing pindef.h
@@ -230,7 +231,7 @@ void setAzimuth(double set){
 
 /** Returns the current (actuator) Elevation angle */
 double getElevation(void){
-  return eleDegCount(analogRead(ELEVATION_PIN));
+return eleDegCount(analogRead(ELEVATION_PIN));
 }
 
 
@@ -278,6 +279,7 @@ void QB50_Code() {
 
 if (_aziMove == true)                        // Automatic Control Routine - Azimuth
   {
+    // Serial.println("Az MOVE");  **QB50 debug code**
     if (_newAzimuth >= (current_az + QB50_PRECISION))   //_newAzimuth is greater than Az 
     {
       digitalWrite(LEFT_PIN, LOW);
@@ -295,11 +297,13 @@ if (_aziMove == true)                        // Automatic Control Routine - Azim
       digitalWrite(LEFT_PIN, LOW);                //Ensures motor turned off when no movement is meant to occur.
       digitalWrite(RIGHT_PIN, LOW);               //Ensures motor turned off when no movement is meant to occur.
       _aziMove = false;                    //Finishes movement loop. Resets flag.
+      // Serial.println("Az STOP");  **QB50 debug code **
     }
   }
 
 if (_elMove == true)                        // Automatic Control Routine - Elevation
   {
+    // Serial.println("El MOVE"); ** QB50 debug code **
     if (_newEl >= (current_el + QB50_PRECISION))   //_newEl is greater than El
     {
       digitalWrite(DOWN_PIN, LOW);
@@ -316,6 +320,7 @@ if (_elMove == true)                        // Automatic Control Routine - Eleva
     {
       digitalWrite(UP_PIN, LOW);                //Ensures motor turned off when no movement is meant to occur.
       digitalWrite(DOWN_PIN, LOW);               //Ensures motor turned off when no movement is meant to occur.
+      // Serial.println("El STOP");   **QB50 debug code **
       _elMove = false;                    //Finishes movement loop. Resets flag.
     }
   }
@@ -432,12 +437,14 @@ void processAzElNumeric(char character)
 
 float get_az()
 {
-  return (((float)analogRead(AZIMUTH_PIN)/1023.0)*360.0);
+ return (((float)analogRead(AZIMUTH_PIN)/1023.0)*360);
+ // return (((float)analogRead(AZIMUTH_PIN)*(AZI_MAX_ANGLE/((AZI_FULL_VOLTS/MAX_COUNTS)-(AZI_MIN_VOLTS/MAX_COUNTS))))); **QB50 new code pending **
       
 }
 
 float get_el()
 {
-  return (((float)analogRead(ELEVATION_PIN)/1023.0)*180.0);
+ return (((float)analogRead(ELEVATION_PIN)/1023.0)*180);
+ // return (((float)analogRead(ELEVATION_PIN)*(ELE_MAX_ANGLE/((ELE_MAX_VOLTS/MAX_COUNTS)-(ELE_MIN_VOLTS/MAX_COUNTS)))));   **QB50 new code pending **
 }
 

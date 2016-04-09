@@ -1,11 +1,11 @@
-/*
-  BLUEsat Groundstation
+//#define OP_MODE MANUAL_MODE
+/*  BLUEsat/QB50 Groundstation
   Arduino Serial to Actuators
   Main Function and Setup code
   Created: T Nguyen, 5-Oct-2014
-  Last Modified: B Luc, 7-Dec-2015
-  Shoutouts to Cameron for QB50 Implemetation and Mark Yeo for implementing most of the code  
-*/
+  Last Modified: B Luc, 25-April-2015
+  QB50 Fork Test Candidate 1 (TC1) by: C McKay - VK2CKP, 13/09/2015  //Added for QB50 Fork
+ */
 /**
 AUTO_MODE:
 - Reads in Elevation & Azimuth angles from Serial, then sets actuators to desired angles
@@ -16,109 +16,104 @@ AUTO_MODE:
 #include "PINDEF.H"
 
 #define STRING_BUFFER 100
+#define OP_MODE MANUAL_MODE
+//#define OP_MODE DEBUG_MODE
 
 /** For MANUAL_MODE - desired Elevation & Azimuth angles*/
-#define EL 0
-#define AZ 0
+#define EL 0.0
+#define AZ 0.0
 
 
 /** For Calibration*/
-#define AZI_FULL_VOLTS 5.043  // Voltage at Angle +180deg
-#define AZI_MIN_VOLTS 0.000 //Voltage at Angle -180deg  - Added in QB50 fork (0 degrees in GS232)
-#define AZI_DZ_ANGLE 18.783   // Angle between 'A' and 'B' (degrees)
-#define ELE_MIN_VOLTS 0.802   // Voltage at Angle +180deg
-#define ELE_MAX_VOLTS 4.997   // Voltage at Angle +180deg //NOTE: THIS CHANGES WHEN ARDUINO IS POWERED BY COMPUTER
-#define ELE_MAX_ANGLE 173.0 // Angle between 'A' and 'B' (degrees)
-#define ELE_MAX_ANGLE 173     // Set emperically so that 90deg = actual 90deg
-#define ELE_DZ_ANGLE 0.000    // Angle between 'A' and 'B' Degrees
+#define AZI_FULL_VOLTS 3.3  // Voltage at Angle +180deg  - (360 degress in GS232 code) //NOTE: Now referenced to 3.3V regulator on arudino - must use external reference in calls
+#define AZI_MIN_VOLTS 0.00:0   // Voltage at Angle -180deg  - Added in QB50 fork (0 degrees in GS232 code)
+#define AZI_MAX_ANGLE 372.0   // Max azimuth angle - added in QB50 fork
+#define AZI_DZ_ANGLE 0.00   // Angle between 'A' and 'B' (degrees)
+#define ELE_MIN_VOLTS 0.71   // Voltage at Angle 0deg
+#define ELE_MAX_VOLTS 3.3   // Voltage at Angle +180deg //NOTE: Now referenced to 3.3V regulator on arudino - must use external reference in calls
+#define ELE_MAX_ANGLE 179     // Set emperically so that 90deg = actual 90deg
+#define ELE_DZ_ANGLE 0.000    // Angle between 'A' and 'B' (degrees) - Added in QB50 fork
 #define MAX_COUNTS 1023       // Maximum int returned from analogRead()
 #define MAX_VOLTS 5.0         // Maximum voltage read by analogRead()
 #define PRECISION 0.4         // Smallest angle increment when reading in (estimate)
-#define TIME_PRECISION 5      // Number of continuous measurements needed 'in bounds' before actuator stops
-#define QB50_PRECISION 3.0 // Tolerable Error in positioning for QB50 control
+#define QB50_PRECISION 3.0    // Tolerable Error in positioning for QB50 control - Added in QB50 fork
+
+//gs232 (automatic mode) variables and flags - QB50 fork only
+boolean _gs232WActive = false;  // gs232 W command in process
+int _gs232AzElIndex = 0;        // position in gs232 Az El sequence
+long _gs232Azimuth = 0;          // gs232 Azimuth value
+int _azimuthTemp = 0;        // used for gs232 azimuth decoding  0 = North, 360 = North (as per GS232 standard)
+float _newAzimuth = 0.0;         // new azimuth for rotor move  0/360 = south, 180 = Nouth (for north centred rotator)
+int _ElTemp = 0;        // used for gs232 elevation decoding  0 = horizontal, 90 = vertical, 180 = inverted 
+float _newEl = 0.0;         // new elevation for rotor move  0 = horizontal, 90 = vertical, 180 = inverted
+boolean _aziMove = false;   //Azimuth move needed
+boolean _elMove = false;    //Elevation move needed
+float current_az = 0.0;   // Current Azimuth (0/360 = South, 180 = Nouth) - Antenna points SOUTH when ROTATOR in 0deg/360deg position
+float current_el = 0.0;   // Current Elevation (0 = Horizontal, 90 = vertical, 180 = inverted)
+
 
 void debugMenu(void);
 void ctrlOff(void);
-void ctrlOn(void);
-double aziDegCount(double countIn);
+double aziDegCount(double countIn);  
 void setElevation(double set);
 void setAzimuth(double set);
 double getAzimuth(void);
 double getElevation(void);
 void normalMenu();
 void commandIn(double set[2]);
+int MODE = 1;  // Added in QB50 fork. 1 (HIGH) = QB50 mode, 0 (LOW) = BLUESat mode.
 
-// gs232 (automatic mode) variables and flags
-boolean _gs232WActive = false;
-int _gs232AzElIndex = 0;
-long _gs232Azimuth = 0;
-int _azimuthTemp = 0;
-float _newAzimuth = 0.0;
-int _ElTemp = 0;
-float _newEl = 0.0;
-boolean _aziMove = false;
-boolean _elMove = false;
-float current_az = 0.0;
-float current_el = 0.0;
-
-//#define OP_MODE MANUAL_MODE
 
 /** Runs on launch/reset */
 void setup(){
-  if (digitalRead(QB50_MODE_PIN)){
-    #define OP_MODE QB50_MODE
-    current_az = get_az();
-    current_el = get_el();          
-  }
-  else{
-    #define OP_MODE AUTO_MODE // If using Python Implementation
-    //#define OP_MODE MANUAL_MODE // If using Java Implementation
-  }
   Serial.begin(9600);          // Init serial comms at 9600 bit/s:
   pinMode(DOWN_PIN, OUTPUT);
   pinMode(LEFT_PIN, OUTPUT);
   pinMode(RIGHT_PIN, OUTPUT);
   pinMode(UP_PIN, OUTPUT);
+  pinMode(QB50_MODE_PIN, INPUT_PULLUP);  // Added for QB50 fork
   ctrlOff();
+  analogReference(EXTERNAL);  //Added in QB50 fork to reference 3.3V from on board regulator
+  MODE=checkmode();
+  current_az = get_az();
+  current_el = get_el();
 }
 
 
 /** Loops forever after setup() is run */
 void loop(){
-  switch (OP_MODE){
+  MODE=checkmode();
+  switch (MODE) {    //Added in QB50 fork
+    case 1:      //Added in QB50 fork
+    QB50_Code();  
+    break;
+   case 0:
+    switch (OP_MODE){
     case DEBUG_MODE:
       debugMenu();
       break;
     case MANUAL_MODE:
-      //1setElevation(EL); 
+      setElevation(EL); 
       setAzimuth(AZ);  
       break;
     case AUTO_MODE:
       normalMenu();
       break;
-    case QB50_MODE:
-      QB50_Code();
-      break;
     default:
       break;  
+   break; //Added in QB50 fork to termiante 'case FALSE'
   }
+  }  //closes MODE switch statement
 }
+
 
 
 /** Turns all control pins off*/
 void ctrlOff(void){
-  digitalWrite(UP_PIN, OFF);
-  digitalWrite(DOWN_PIN, OFF);
-  digitalWrite(LEFT_PIN, OFF);
-  digitalWrite(RIGHT_PIN, OFF);
-}
-
-/** Turns all control pins on */
-void ctrlOn(void){
-  digitalWrite(UP_PIN, ON);
-  digitalWrite(DOWN_PIN, ON);
-  digitalWrite(LEFT_PIN, ON);
-  digitalWrite(RIGHT_PIN, ON);
+  digitalWrite(UP_PIN, OFF);      
+  digitalWrite(DOWN_PIN, OFF);    
+  digitalWrite(LEFT_PIN, OFF);    
+  digitalWrite(RIGHT_PIN, OFF);   
 }
 
 
@@ -137,19 +132,19 @@ void debugMenu(){
     switch (c) {
       case 'w':
        Serial.println("Going UP");
-         digitalWrite(RIGHT_PIN,ON);
+         digitalWrite(UP_PIN,ON);    //fixed in qb50 fork by changing pindef.h
       break;
       case 'a':
        Serial.println("Going Left");
-         digitalWrite(DOWN_PIN,ON); //was left
+         digitalWrite(LEFT_PIN,ON);  //fixed in qb50 fork by changing pindef.h
       break;
       case 's':
        Serial.println("Going Down");
-         digitalWrite(UP_PIN,ON);
-      break;
+         digitalWrite(DOWN_PIN,ON);  //fixed in qb50 fork by changing pindef.h
+      break;  Serial.println("QB50 Mode Enabled");
       case 'd':
        Serial.println("Going Right");
-         digitalWrite(LEFT_PIN,ON); //was riGht
+         digitalWrite(RIGHT_PIN,ON);  //fixed in qb50 fork by changing pindef.h
       break;
       default:
         ctrlOff();
@@ -184,7 +179,7 @@ void setElevation(double set){
   //double current = getElevation();
   if (current > set + PRECISION/2) {        // If the current (actuator) angle > desired angle (set),
     while (current > set + PRECISION/2) {   // Turn the actuator downwards until current angle < desired angle
-      digitalWrite(UP_PIN, ON);
+      digitalWrite(DOWN_PIN, ON);
       //Serial.print("down ");
       //Serial.print(current);
       //Serial.println(set);
@@ -192,7 +187,7 @@ void setElevation(double set){
     }
   } else if (current < set - PRECISION/2) {
     while (current < set - PRECISION/2) { 
-      digitalWrite(RIGHT_PIN, ON);
+      digitalWrite(UP_PIN, ON);
       //Serial.print("up ");
       //Serial.print(current);
       //Serial.println(set);
@@ -206,38 +201,29 @@ void setElevation(double set){
 /** Sets azimuth actuator to given degrees [-180+AZI_DZ_ANGLE,180]*/
 void setAzimuth(double set){
   int azimuth = analogRead(AZIMUTH_PIN);
-  int inBoundCount = 0;  //a counter to count how many times we are in the 'precision' bounds of the 'set' value
   double current = aziDegCount(azimuth);
   //double current = getAzimuth();
   while (current > set + PRECISION/2) {
-    inBoundCount =  0;
-    digitalWrite(DOWN_PIN, ON);
+    digitalWrite(LEFT_PIN, ON);
     Serial.print("left ");
     Serial.print(current);
     Serial.println(set);
     current = getAzimuth();
   }
   while (current < set - PRECISION/2) { 
-    inBoundCount =  0;
-    digitalWrite(LEFT_PIN, ON);
+    digitalWrite(RIGHT_PIN, ON);
     Serial.print("right ");
     Serial.print(current);
     Serial.println(set);
     current = getAzimuth();
   }
   while ((current >= (set - PRECISION/2)) || (current <= (set + PRECISION/2))) {
-    inBoundCount = inBoundCount + 1; //Count how many times we are in the precision zone.
-    if (inBoundCount == TIME_PRECISION) { 
-      digitalWrite(DOWN_PIN, OFF);
-      digitalWrite(LEFT_PIN, OFF);
-    }
+    digitalWrite(RIGHT_PIN, OFF);
+    digitalWrite(LEFT_PIN, OFF);
   }
   while (current == (set)) {
-    inBoundCount = inBoundCount + 1; //Count how many times we are in the precision zone. 
-    if (inBoundCount == TIME_PRECISION) { 
-      digitalWrite(DOWN_PIN, OFF);
-      digitalWrite(LEFT_PIN, OFF);
-    }
+    digitalWrite(RIGHT_PIN, OFF);
+    digitalWrite(LEFT_PIN, OFF);
   }
   ctrlOff();
 }
@@ -245,7 +231,7 @@ void setAzimuth(double set){
 
 /** Returns the current (actuator) Elevation angle */
 double getElevation(void){
-  return eleDegCount(analogRead(ELEVATION_PIN));
+return eleDegCount(analogRead(ELEVATION_PIN));
 }
 
 
@@ -257,10 +243,9 @@ double getAzimuth(void){
 
 /** Sets actuators, given E&A angles through Serial */
 void normalMenu(){
-  ctrlOn();
   double set[2] = {0,0};
   commandIn(set);
-  setElevation(set[0]);
+  //setElevation(set[0]);
   setAzimuth(set[1]);
   Serial.println("1");    // Returns "1" when actuators are set
 }
@@ -282,144 +267,182 @@ void commandIn(double set[2]){
   temp = Serial.read();            // Gets rid of final ']'
 }
 
+int checkmode(){                                //Added in QB50 fork to determine whether QB50/GS232 control code to operate or BLUESat code to operate.
+  return (digitalRead(QB50_MODE_PIN));
+}
 
-// QB50 Implementation
 void QB50_Code() {
-   if (Serial.available() > 0){
-      decodeGS232(Serial.read());
-   } 
-   if(_aziMove == true){
-     if(_newAzimuth >= (current_az + QB50_PRECISION)){
-       digitalWrite(LEFT_PIN, LOW);
-       digitalWrite(RIGHT_PIN, HIGH);
-       current_az = get_az();
-     
-     }
-     else if(_newAzimuth <= (current_az - QB50_PRECISION)){
-       digitalWrite(RIGHT_PIN, LOW);
-       digitalWrite(LEFT_PIN, HIGH);
-       current_az = get_az();
-     }
-     else{
-       digitalWrite(LEFT_PIN, LOW);
-       digitalWrite(RIGHT_PIN, LOW);
-       _aziMove = false;
-     }
-   }
-   if(_elMove == true){
-     if(_newEl >= (current_el + QB50_PRECISION)){
-       digitalWrite(DOWN_PIN, LOW);
-       digitalWrite(UP_PIN, HIGH);
-       current_el = get_el();
-     
-     }
-     else if(_newEl <= (current_el - QB50_PRECISION)){
-       digitalWrite(UP_PIN, LOW);
-       digitalWrite(DOWN_PIN, HIGH);
-       current_el = get_el();
-     }
-     else{
-       digitalWrite(UP_PIN, LOW);
-       digitalWrite(DOWN_PIN, LOW);
-       _elMove = false;
-     }
-   }  
+    if (Serial.available() > 0)
+  {
+    decodeGS232(Serial.read());
+  }
+
+if (_aziMove == true)                        // Automatic Control Routine - Azimuth
+  {
+    Serial.println("Az MOVE");
+    if (_newAzimuth >= (current_az + QB50_PRECISION))   //_newAzimuth is greater than Az 
+    {
+      digitalWrite(LEFT_PIN, LOW);
+      digitalWrite(RIGHT_PIN, HIGH);
+      current_az = get_az();
+    }
+    else if (_newAzimuth <= (current_az - QB50_PRECISION))   //_newAzimuth is less than than Az 
+    {
+      digitalWrite(RIGHT_PIN, LOW);
+      digitalWrite(LEFT_PIN, HIGH);
+      current_az = get_az();
+    }
+    else
+    {
+      digitalWrite(LEFT_PIN, LOW);                //Ensures motor turned off when no movement is meant to occur.
+      digitalWrite(RIGHT_PIN, LOW);               //Ensures motor turned off when no movement is meant to occur.
+      _aziMove = false;                    //Finishes movement loop. Resets flag.
+      Serial.println("Az STOP");
+    }
+  }
+
+if (_elMove == true)                        // Automatic Control Routine - Elevation
+  {
+    Serial.println("El MOVE");
+    if (_newEl >= (current_el + QB50_PRECISION))   //_newEl is greater than El
+    {
+      digitalWrite(DOWN_PIN, LOW);
+      digitalWrite(UP_PIN, HIGH);
+      current_el = get_el();
+    }
+    else if (_newEl <= (current_el - QB50_PRECISION))   //_newEl is less than El
+    {
+      digitalWrite(UP_PIN, LOW);
+      digitalWrite(DOWN_PIN, HIGH);
+      current_el = get_el();
+    }
+    else
+    {
+      digitalWrite(UP_PIN, LOW);                //Ensures motor turned off when no movement is meant to occur.
+      digitalWrite(DOWN_PIN, LOW);               //Ensures motor turned off when no movement is meant to occur.
+      Serial.println("El STOP");
+      _elMove = false;                    //Finishes movement loop. Resets flag.
+    }
+  }
+
+  
+  
 }
 
 // decode gs232 commands - QB50 Code
-void decodeGS232(char character){
-  switch(character){
-    case 'w':
+//
+void decodeGS232(char character)
+{
+  switch (character)
+  {
+    case 'w':  // gs232 W command
     case 'W':
-      {
+     {
         {
           _gs232WActive = true;
           _gs232AzElIndex = 0;
         }
         break;
-      
       }
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
+
+    // numeric - azimuth and elevation digits
+    case '0':  case '1':   case '2':  case '3':  case '4':
+    case '5':  case '6':   case '7':  case '8':  case '9':
       {
-        if(_gs232WActive){
+        if ( _gs232WActive)
+        {
           processAzElNumeric(character);
         }
       }
-    
+
     default:
       {
-        //ignore everything else
+        // ignore everything else
       }
   }
 }
 
+//
 // process az el numeric characters from gs232 W command - QB50 Code
-void processAzElNumeric(char character){
-  switch(_gs232AzElIndex){
-    case 0: //first azi character
+//
+void processAzElNumeric(char character)
+{
+  switch (_gs232AzElIndex)
+  {
+    case 0: // first azimuth character
       {
-        _azimuthTemp = (character-48) * 100;
+        _azimuthTemp = (character - 48) * 100;
         _gs232AzElIndex++;
         break;
       }
-    case 1: //second azi character
+
+    case 1:  //second azimuth character
       {
-        _azimuthTemp += (character - 48) * 10;
+        _azimuthTemp = _azimuthTemp + (character - 48) * 10;
         _gs232AzElIndex++;
+        break;
       }
-    case 2: //final azi character
+
+    case 2: // final azimuth character
       {
-        _azimuthTemp += (character - 48);
+        _azimuthTemp = _azimuthTemp + (character - 48);
         _gs232AzElIndex++;
-        
-        // set up for rotor move
+
+      // set up for rotor move
         _newAzimuth = float(_azimuthTemp);
-        if ((_newAzimuth) > 180.0){
-          _newAzimuth -= 180;
+        if ((_newAzimuth) > 180.0)
+        {
+          _newAzimuth = _newAzimuth - 180.0;
         }
-        else{
-          _newAzimuth += 180;
+        else
+        {
+          _newAzimuth = _newAzimuth + 180.0;
         }
         _aziMove = true;
         break;
       }
-    case 3: //first ele character
+
+    case 3: // first elevation character
       {
         _ElTemp = (character - 48) * 100;
         _gs232AzElIndex++;
         break;
       }
-    case 4: //second azi character
+
+    case 4:  //second elevation character
       {
-        _ElTemp += (character - 48);
-        _newEl = float(_ElTemp);
-        _elMove = true;
-        _gs232WActive = false;
+        _ElTemp = _ElTemp + (character - 48) * 10;
+        _gs232AzElIndex++;
         break;
       }
-    case 5: //final ele character
+
+    case 5: // last elevation character
       {
         _gs232AzElIndex++;
-        //set up for rotor move
-        _ElTemp += (character -48);
+
+        // set up for rotor move
+        _ElTemp = _ElTemp + (character - 48);
         _newEl = float(_ElTemp);
         _elMove = true;
         _gs232WActive = false;
         break;
       }
-     default:
-       {
-         //should never get here
-       }
+
+    default:
+      {
+        // should never get here
+      }
   }
 }
 
-
-float get_az(){
-  return (((float)analogRead(AZIMUTH_PIN)/1023.0)*360);
+float get_az()
+{
+  return (((float)analogRead(AZIMUTH_PIN)*(AZI_MAX_ANGLE/((AZI_FULL_VOLTS/MAX_COUNTS)-(AZI_MIN_VOLTS/MAX_COUNTS)))));
+      
 }
 
-float get_el(){
-  return (((float)analogRead(ELEVATION_PIN)/1023.0)*180);
-}               
+float get_el()
+{
+  return (((float)analogRead(ELEVATION_PIN)*(ELE_MAX_ANGLE/((ELE_MAX_VOLTS/MAX_COUNTS)-(ELE_MIN_VOLTS/MAX_COUNTS)))));
+}
+
